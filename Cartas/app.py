@@ -11,8 +11,8 @@ os.makedirs(TEMPLATE_FOLDER, exist_ok=True)
 
 # URLs to GitHub RAW files (Update with your actual repo)
 TEMPLATE_URLS = {
-    "attackcard.png": "https://raw.githubusercontent.com/YOUR_GITHUB_USERNAME/YOUR_REPO/main/templates/attackcard.png",
-    "defensecard.png": "https://raw.githubusercontent.com/YOUR_GITHUB_USERNAME/YOUR_REPO/main/templates/defensecard.png",
+    "attackcard.png": "https://github.com/TiagoFerreira13/Test/blob/main/Cartas/templates/attackcard.png",
+    "defensecard.png": "https://github.com/TiagoFerreira13/Test/blob/main/Cartas/templates/defensecard.png",
 }
 
 # Ensure templates exist
