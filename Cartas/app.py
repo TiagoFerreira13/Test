@@ -64,10 +64,10 @@ if st.button("Adicionar Carta"):
     add_card()
 
 st.subheader("Cartas de Ataque")
-st.write([card["title"] for card in st.session_state["cards_attack"]])
+st.text([card["title"] for card in st.session_state["cards_attack"]])
 
 st.subheader("Cartas de Defesa")
-st.write([card["title"] for card in st.session_state["cards_defense"]])
+st.text([card["title"] for card in st.session_state["cards_defense"]])
 
 if st.button("Gerar JSON"):
     generate_json()
