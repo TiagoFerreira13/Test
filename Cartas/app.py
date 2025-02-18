@@ -9,11 +9,11 @@ from PIL import Image, ImageDraw, ImageFont, ImageOps
 TEMPLATE_FOLDER = "templates"
 os.makedirs(TEMPLATE_FOLDER, exist_ok=True)
 
-# URLs to GitHub RAW files (Update with your actual repo)
+# URLs to GitHub RAW files
 TEMPLATE_URLS = {
-    "attackcard.png": "https://github.com/TiagoFerreira13/Test/blob/main/Cartas/templates/attackcard.png",
-    "defensecard.png": "https://github.com/TiagoFerreira13/Test/blob/main/Cartas/templates/defensecard.png",
-    "Rajdhani-Regular.ttf": "https://github.com/TiagoFerreira13/Test/raw/refs/heads/main/Cartas/Rajdhani/Rajdhani-Regular.ttf"
+    "attackcard.png": "https://raw.githubusercontent.com/YOUR_GITHUB_USERNAME/YOUR_REPO/main/Cartas/templates/attackcard.png",
+    "defensecard.png": "https://raw.githubusercontent.com/YOUR_GITHUB_USERNAME/YOUR_REPO/main/Cartas/templates/defensecard.png",
+    "Rajdhani-Regular.ttf": "https://raw.githubusercontent.com/YOUR_GITHUB_USERNAME/YOUR_REPO/main/Cartas/Rajdhani/Rajdhani-Regular.ttf"
 }
 
 # Ensure templates exist
@@ -26,7 +26,7 @@ for filename, url in TEMPLATE_URLS.items():
         except Exception as e:
             st.error(f"Failed to download {filename}: {e}")
 
-# Confirm files exist
+# Confirm files exist before continuing
 missing_files = [f for f in TEMPLATE_URLS.keys() if not os.path.exists(os.path.join(TEMPLATE_FOLDER, f))]
 if missing_files:
     st.error(f"Some template files are missing: {', '.join(missing_files)}")
@@ -48,26 +48,29 @@ def generate_cards(json_data):
         return
 
     for flavor in ["attack", "defense"]:
-        template_path = json_data["flavors"][flavor]["base_image"]
+        template_path = os.path.join(TEMPLATE_FOLDER, f"{flavor}card.png")
         if not os.path.exists(template_path):
             st.error(f"Template image for {flavor} is missing!")
             return
         
         cards = json_data["flavors"][flavor]["cards"]
         for card in cards:
-            template = Image.open(template_path).convert("RGBA")
-            draw = ImageDraw.Draw(template)
-            
-            draw.text((175, 83), card["title"], font=title_font, fill="white", align="center")
-            draw.text((115, 444), flavor.capitalize(), font=category_font, fill="white")
-            draw.text((115, 495), card["description"], font=desc_font, fill="white")
+            try:
+                template = Image.open(template_path).convert("RGBA")
+                draw = ImageDraw.Draw(template)
 
-            if card.get("quote"):
-                draw.text((115, 685), card["quote"], font=desc_font, fill="white")
+                draw.text((175, 83), card["title"], font=title_font, fill="white", align="center")
+                draw.text((115, 444), flavor.capitalize(), font=category_font, fill="white")
+                draw.text((115, 495), card["description"], font=desc_font, fill="white")
 
-            filename = f"{card['deck'].replace(' ', '_')}_{card['title'].replace(' ', '_')}.png"
-            template.save(filename)
-            st.download_button(f"Baixar {filename}", open(filename, "rb"), filename, "image/png")
+                if card.get("quote"):
+                    draw.text((115, 685), card["quote"], font=desc_font, fill="white")
+
+                filename = f"{card['deck'].replace(' ', '_')}_{card['title'].replace(' ', '_')}.png"
+                template.save(filename)
+                st.download_button(f"Baixar {filename}", open(filename, "rb"), filename, "image/png")
+            except Exception as e:
+                st.error(f"Error generating card {card['title']}: {e}")
 
 def main():
     st.title("Criador de Cartas de Cibersegurança")
