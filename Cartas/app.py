@@ -27,56 +27,44 @@ for filename, url in TEMPLATE_URLS.items():
             st.error(f"Failed to download {filename}: {e}")
 
 # Confirm files exist
-if not all(os.path.exists(os.path.join(TEMPLATE_FOLDER, f)) for f in TEMPLATE_URLS.keys()):
-    st.error("Some template images are missing! Please check the templates folder.")
-
-def draw_text(draw, text, font, box, align="left", fill=(255,255,255)):
-    x, y, w, h = box
-    wrap_width = 30 if align == "center" else 40
-    lines = textwrap.wrap(text, width=wrap_width)
-    bbox_ref = draw.textbbox((0, 0), "A", font=font)
-    line_height = (bbox_ref[3] - bbox_ref[1]) + 6
-    current_y = y
-    
-    for i, line in enumerate(lines):
-        if align == "justified" and i < len(lines) - 1:
-            words = line.split()
-            total_words_width = sum(draw.textbbox((0,0), word, font=font)[2] for word in words)
-            total_space = w - total_words_width
-            space_count = len(words) - 1
-            space_width = total_space // space_count if space_count > 0 else 0
-            current_x = x
-            for j, word in enumerate(words):
-                draw.text((current_x, current_y), word, font=font, fill=fill)
-                wbbox = draw.textbbox((0,0), word, font=font)
-                word_width = wbbox[2] - wbbox[0]
-                current_x += word_width + space_width
-        else:
-            line_bbox = draw.textbbox((0,0), line, font=font)
-            line_width = line_bbox[2] - line_bbox[0]
-            line_x = x + (w - line_width) // 2 if align == "center" else x
-            draw.text((line_x, current_y), line, font=font, fill=fill)
-        current_y += line_height
+missing_files = [f for f in TEMPLATE_URLS.keys() if not os.path.exists(os.path.join(TEMPLATE_FOLDER, f))]
+if missing_files:
+    st.error(f"Some template files are missing: {', '.join(missing_files)}")
 
 def generate_cards(json_data):
     font_path = os.path.join(TEMPLATE_FOLDER, "Rajdhani-Regular.ttf")
-    title_font = ImageFont.truetype(font_path, 48)
-    category_font = ImageFont.truetype(font_path, 28)
-    desc_font = ImageFont.truetype(font_path, 28)
+
+    # Ensure font exists before loading
+    if not os.path.exists(font_path):
+        st.error("Font file is missing! Cannot generate cards.")
+        return
     
+    try:
+        title_font = ImageFont.truetype(font_path, 48)
+        category_font = ImageFont.truetype(font_path, 28)
+        desc_font = ImageFont.truetype(font_path, 28)
+    except OSError as e:
+        st.error(f"Error loading font: {e}")
+        return
+
     for flavor in ["attack", "defense"]:
         template_path = json_data["flavors"][flavor]["base_image"]
+        if not os.path.exists(template_path):
+            st.error(f"Template image for {flavor} is missing!")
+            return
+        
         cards = json_data["flavors"][flavor]["cards"]
         for card in cards:
             template = Image.open(template_path).convert("RGBA")
             draw = ImageDraw.Draw(template)
             
-            draw_text(draw, card["title"], title_font, (175, 83, 400, 60), align="center")
-            draw_text(draw, flavor.capitalize(), category_font, (115, 444, 300, 40), align="left")
-            draw_text(draw, card["description"], desc_font, (115, 495, 500, 180), align="justified")
+            draw.text((175, 83), card["title"], font=title_font, fill="white", align="center")
+            draw.text((115, 444), flavor.capitalize(), font=category_font, fill="white")
+            draw.text((115, 495), card["description"], font=desc_font, fill="white")
+
             if card.get("quote"):
-                draw_text(draw, card["quote"], desc_font, (115, 685, 500, 100), align="justified")
-            
+                draw.text((115, 685), card["quote"], font=desc_font, fill="white")
+
             filename = f"{card['deck'].replace(' ', '_')}_{card['title'].replace(' ', '_')}.png"
             template.save(filename)
             st.download_button(f"Baixar {filename}", open(filename, "rb"), filename, "image/png")
