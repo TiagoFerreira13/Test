@@ -10,18 +10,20 @@ def main():
         st.session_state["cards_attack"] = []
     if "cards_defense" not in st.session_state:
         st.session_state["cards_defense"] = []
+    if "deck" not in st.session_state:
+        st.session_state["deck"] = ""
     
     # Card Input Fields
-    deck = st.text_input("Deck")
+    deck = st.text_input("Deck", value=st.session_state["deck"])
     title = st.text_input("Título")
-    card_type = st.selectbox("Tipo", ["Ataque", "Defesa"])
+    card_type = st.selectbox("Tipo", ["Ataque", "Defesa"], index=None, disabled=False)
     description = st.text_area("Descrição")
     quote = st.text_area("Quote (Opcional)")
     image = st.file_uploader("Upload de Imagem (Opcional)", type=["png", "jpg", "jpeg"])
     
     if st.button("Adicionar Carta"):
-        if not title or not description:
-            st.error("O título e a descrição são obrigatórios!")
+        if not title or not description or card_type is None:
+            st.error("O título, tipo e descrição são obrigatórios!")
         else:
             card = {
                 "deck": deck.strip(),
@@ -38,6 +40,10 @@ def main():
                 st.session_state["cards_defense"].append(card)
             
             st.success(f"Carta '{title}' adicionada com sucesso!")
+            
+            # Reset input fields except deck
+            st.session_state["deck"] = deck.strip()
+            st.experimental_rerun()
     
     # Display cards
     st.subheader("Cartas de Ataque")
