@@ -1,6 +1,8 @@
 import streamlit as st
 import json
 import os
+import textwrap
+from PIL import Image, ImageDraw, ImageFont, ImageOps
 
 def main():
     st.title("Criador de Cartas de Cibersegurança")
@@ -54,35 +56,34 @@ def main():
     for card in st.session_state["cards_defense"]:
         st.text(f"- {card['title']}")
     
-    # JSON Generation
-    if st.button("Gerar JSON"):
+    # JSON & Image Generation
+    if st.button("Baixar Cartas e JSON"):
         json_data = {
             "flavors": {
                 "attack": {"base_image": "templates/attackcard.png", "cards": st.session_state["cards_attack"]},
                 "defense": {"base_image": "templates/defensecard.png", "cards": st.session_state["cards_defense"]}
-            },
-            "font": {
-                "path": "Rajdhani/Rajdhani-Regular.ttf",
-                "title_size": 48,
-                "category_size": 28,
-                "desc_size": 28
-            },
-            "layout": {
-                "title_box": [175, 83, 400, 60],
-                "image_box": [107, 151, 530, 282.5],
-                "category_box": [115, 444, 300, 40],
-                "desc_box": [115, 495, 500, 180],
-                "quote_box": [115, 685, 500, 100]
-            },
-            "output_dir": "output"
+            }
         }
         
         json_filename = "cartas.json"
         with open(json_filename, "w", encoding="utf-8") as f:
             json.dump(json_data, f, ensure_ascii=False, indent=4)
         
-        st.success("JSON gerado com sucesso!")
         st.download_button("Baixar JSON", json.dumps(json_data, ensure_ascii=False, indent=4), json_filename, "application/json")
+        
+        # Create Images
+        for flavor in ["attack", "defense"]:
+            template_path = json_data["flavors"][flavor]["base_image"]
+            cards = json_data["flavors"][flavor]["cards"]
+            
+            for card in cards:
+                template = Image.open(template_path).convert("RGBA")
+                draw = ImageDraw.Draw(template)
+                title_font = ImageFont.truetype("Rajdhani/Rajdhani-Regular.ttf", 48)
+                draw.text((100, 50), card["title"], font=title_font, fill=(255,255,255))
+                image_filename = f"{card['deck'].replace(' ', '_')}_{card['title'].replace(' ', '_')}.png"
+                template.save(image_filename)
+                st.download_button(f"Baixar {card['title']}", open(image_filename, "rb"), image_filename, "image/png")
 
 if __name__ == "__main__":
     main()
