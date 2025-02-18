@@ -21,9 +21,9 @@ def download_file(url, filename):
         if response.status_code == 200:
             with open(filename, "wb") as f:
                 f.write(response.content)
-            print(f"✅ Downloaded {filename}")
+            print(f"Downloaded {filename}")
         else:
-            print(f"❌ Failed to download {filename}")
+            print(f"Failed to download {filename}")
 
 # Download required assets
 download_file(FONT_URL, FONT_PATH)
@@ -36,14 +36,14 @@ try:
     category_font = ImageFont.truetype(FONT_PATH, 28)
     desc_font = ImageFont.truetype(FONT_PATH, 28)
 except OSError:
-    st.error("❌ Font failed to load. Using default font.")
+    st.error("Font failed to load. Using default font.")
     title_font = ImageFont.load_default()
     category_font = ImageFont.load_default()
     desc_font = ImageFont.load_default()
 
 # Streamlit app
 def main():
-    st.title("🎴 Criador de Cartas de Cibersegurança")
+    st.title("Criador de Cartas de Cibersegurança")
 
     # Session state for storing cards
     if "cards_attack" not in st.session_state:
@@ -62,7 +62,7 @@ def main():
     # Add card
     if st.button("Adicionar Carta"):
         if not title or not description:
-            st.error("⚠️ O título e descrição são obrigatórios!")
+            st.error("O título e descrição são obrigatórios!")
         else:
             image_path = ""
             if image:
@@ -84,14 +84,14 @@ def main():
             else:
                 st.session_state["cards_defense"].append(card)
 
-            st.success(f"✅ Carta '{title}' adicionada!")
+            st.success(f"Carta '{title}' adicionada!")
 
     # Display Cards
-    st.subheader("🛡️ Cartas de Defesa")
+    st.subheader("Cartas de Defesa")
     for card in st.session_state["cards_defense"]:
         st.text(f"- {card['title']}")
 
-    st.subheader("⚔️ Cartas de Ataque")
+    st.subheader("Cartas de Ataque")
     for card in st.session_state["cards_attack"]:
         st.text(f"- {card['title']}")
 
@@ -117,8 +117,8 @@ def main():
         with open(json_filename, "w", encoding="utf-8") as f:
             json.dump(json_data, f, ensure_ascii=False, indent=4)
         
-        st.success("✅ JSON gerado com sucesso!")
-        st.download_button("📥 Baixar JSON", json.dumps(json_data, ensure_ascii=False, indent=4), json_filename, "application/json")
+        st.success("JSON gerado com sucesso!")
+        st.download_button("Baixar JSON", json.dumps(json_data, ensure_ascii=False, indent=4), json_filename, "application/json")
 
     # Generate Cards
     if st.button("Gerar Cartas"):
@@ -165,7 +165,7 @@ def main():
 
                 filename = f"{card['deck'].replace(' ', '_')}_{card['title'].replace(' ', '_')}.png"
                 template.save(os.path.join(OUTPUT_DIR, filename))
-                st.success(f"✅ Carta '{card['title']}' gerada!")
+                st.success(f"Carta '{card['title']}' gerada!")
 
 if __name__ == "__main__":
     main()
