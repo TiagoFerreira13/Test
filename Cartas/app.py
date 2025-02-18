@@ -31,7 +31,7 @@ def main():
                 "deck": deck.strip(),
                 "title": title.strip(),
                 "state": "draft/ready",
-                "image": image.name if image else "images/",
+                "image": "images/" + image.name if image else "images/",
                 "description": description.strip(),
                 "quote": quote.strip()
             }
