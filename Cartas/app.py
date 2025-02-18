@@ -15,7 +15,8 @@ def add_card():
     card_type = st.session_state["card_type"].strip().lower()
     description = st.session_state["description"].strip()
     quote = st.session_state["quote"].strip()
-    image_path = st.session_state["image"] if "image" in st.session_state else "images/"
+    image_file = st.session_state["image"]
+    image_name = image_file.name if image_file else ""
 
     if not title or card_type not in ["ataque", "defesa"] or not description:
         st.error("Título, Tipo (ataque/defesa) e descrição são necessários.")
@@ -25,7 +26,7 @@ def add_card():
         "deck": deck,
         "title": title,
         "state": "draft/ready",
-        "image": image_path,
+        "image": image_name,
         "description": description,
         "quote": quote
     }
