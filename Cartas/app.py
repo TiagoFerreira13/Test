@@ -1,136 +1,73 @@
 import streamlit as st
 import json
-import os
-import urllib.request
-import textwrap
-from PIL import Image, ImageDraw, ImageFont, ImageOps
 
-# Define template folder
-TEMPLATE_FOLDER = "templates"
-os.makedirs(TEMPLATE_FOLDER, exist_ok=True)
+# Lists to store attack and defense cards
+if "cards_attack" not in st.session_state:
+    st.session_state["cards_attack"] = []
+if "cards_defense" not in st.session_state:
+    st.session_state["cards_defense"] = []
+if "deck" not in st.session_state:
+    st.session_state["deck"] = ""
 
-# URLs to GitHub RAW files
-TEMPLATE_URLS = {
-    "attackcard.png": "https://raw.githubusercontent.com/YOUR_GITHUB_USERNAME/YOUR_REPO/main/Cartas/templates/attackcard.png",
-    "defensecard.png": "https://raw.githubusercontent.com/YOUR_GITHUB_USERNAME/YOUR_REPO/main/Cartas/templates/defensecard.png",
-    "Rajdhani-Regular.ttf": "https://raw.githubusercontent.com/YOUR_GITHUB_USERNAME/YOUR_REPO/main/Cartas/Rajdhani/Rajdhani-Regular.ttf"
-}
+def add_card():
+    deck = st.session_state["deck"].strip()
+    title = st.session_state["title"].strip()
+    card_type = st.session_state["card_type"].strip().lower()
+    description = st.session_state["description"].strip()
+    quote = st.session_state["quote"].strip()
+    image_path = st.session_state["image"] if "image" in st.session_state else "images/"
 
-# Ensure templates exist
-for filename, url in TEMPLATE_URLS.items():
-    filepath = os.path.join(TEMPLATE_FOLDER, filename)
-    if not os.path.exists(filepath):
-        try:
-            st.write(f"Downloading {filename} from GitHub...")
-            urllib.request.urlretrieve(url, filepath)
-        except Exception as e:
-            st.error(f"Failed to download {filename}: {e}")
-
-# Confirm files exist before continuing
-missing_files = [f for f in TEMPLATE_URLS.keys() if not os.path.exists(os.path.join(TEMPLATE_FOLDER, f))]
-if missing_files:
-    st.error(f"Some template files are missing: {', '.join(missing_files)}")
-
-def generate_cards(json_data):
-    font_path = os.path.join(TEMPLATE_FOLDER, "Rajdhani-Regular.ttf")
-
-    # Ensure font exists before loading
-    if not os.path.exists(font_path):
-        st.error("Font file is missing! Cannot generate cards.")
-        return
-    
-    try:
-        title_font = ImageFont.truetype(font_path, 48)
-        category_font = ImageFont.truetype(font_path, 28)
-        desc_font = ImageFont.truetype(font_path, 28)
-    except OSError as e:
-        st.error(f"Error loading font: {e}")
+    if not title or card_type not in ["ataque", "defesa"] or not description:
+        st.error("Título, Tipo (ataque/defesa) e descrição são necessários.")
         return
 
-    for flavor in ["attack", "defense"]:
-        template_path = os.path.join(TEMPLATE_FOLDER, f"{flavor}card.png")
-        if not os.path.exists(template_path):
-            st.error(f"Template image for {flavor} is missing!")
-            return
-        
-        cards = json_data["flavors"][flavor]["cards"]
-        for card in cards:
-            try:
-                template = Image.open(template_path).convert("RGBA")
-                draw = ImageDraw.Draw(template)
+    card = {
+        "deck": deck,
+        "title": title,
+        "state": "draft/ready",
+        "image": image_path,
+        "description": description,
+        "quote": quote
+    }
 
-                draw.text((175, 83), card["title"], font=title_font, fill="white", align="center")
-                draw.text((115, 444), flavor.capitalize(), font=category_font, fill="white")
-                draw.text((115, 495), card["description"], font=desc_font, fill="white")
+    if card_type == "ataque":
+        st.session_state["cards_attack"].append(card)
+    else:
+        st.session_state["cards_defense"].append(card)
+    
+    st.success(f"Carta '{title}' adicionada com sucesso!")
 
-                if card.get("quote"):
-                    draw.text((115, 685), card["quote"], font=desc_font, fill="white")
-
-                filename = f"{card['deck'].replace(' ', '_')}_{card['title'].replace(' ', '_')}.png"
-                template.save(filename)
-                st.download_button(f"Baixar {filename}", open(filename, "rb"), filename, "image/png")
-            except Exception as e:
-                st.error(f"Error generating card {card['title']}: {e}")
-
-def main():
-    st.title("Criador de Cartas de Cibersegurança")
-    
-    if "cards_attack" not in st.session_state:
-        st.session_state["cards_attack"] = []
-    if "cards_defense" not in st.session_state:
-        st.session_state["cards_defense"] = []
-    if "deck" not in st.session_state:
-        st.session_state["deck"] = ""
-    
-    deck = st.text_input("Deck", value=st.session_state["deck"])
-    title = st.text_input("Título")
-    card_type = st.selectbox("Tipo", ["Ataque", "Defesa"], index=None, disabled=False)
-    description = st.text_area("Descrição")
-    quote = st.text_area("Quote")
-    image = st.file_uploader("Upload de Imagem", type=["png", "jpg", "jpeg"])
-    
-    if st.button("Adicionar Carta"):
-        if not title or not description or card_type is None:
-            st.error("O título, tipo e descrição são obrigatórios!")
-        else:
-            card = {
-                "deck": deck.strip(),
-                "title": title.strip(),
-                "state": "draft/ready",
-                "image": image.name if image else "images/",
-                "description": description.strip(),
-                "quote": quote.strip()
-            }
-            
-            if card_type == "Ataque":
-                st.session_state["cards_attack"].append(card)
-            else:
-                st.session_state["cards_defense"].append(card)
-            
-            st.success(f"Carta '{title}' adicionada com sucesso!")
-            st.session_state["deck"] = deck.strip()
-    
-    st.subheader("Cartas de Ataque")
-    for card in st.session_state["cards_attack"]:
-        st.text(f"- {card['title']}")
-    
-    st.subheader("Cartas de Defesa")
-    for card in st.session_state["cards_defense"]:
-        st.text(f"- {card['title']}")
-    
-    if st.button("Gerar JSON e Cartas"):
-        json_data = {
-            "flavors": {
-                "attack": {"base_image": os.path.join(TEMPLATE_FOLDER, "attackcard.png"), "cards": st.session_state["cards_attack"]},
-                "defense": {"base_image": os.path.join(TEMPLATE_FOLDER, "defensecard.png"), "cards": st.session_state["cards_defense"]}
-            }
+def generate_json():
+    json_data = {
+        "flavors": {
+            "attack": {"base_image": "templates/attackcard.png", "cards": st.session_state["cards_attack"]},
+            "defense": {"base_image": "templates/defensecard.png", "cards": st.session_state["cards_defense"]}
         }
-        json_filename = "cartas.json"
-        with open(json_filename, "w", encoding="utf-8") as f:
-            json.dump(json_data, f, ensure_ascii=False, indent=4)
-        st.success("JSON e cartas geradas com sucesso!")
-        st.download_button("Baixar JSON", json.dumps(json_data, ensure_ascii=False, indent=4), json_filename, "application/json")
-        generate_cards(json_data)
+    }
+    json_filename = "cartas.json"
+    with open(json_filename, "w", encoding="utf-8") as f:
+        json.dump(json_data, f, ensure_ascii=False, indent=4)
+    st.success("JSON gerado com sucesso!")
+    st.download_button("Baixar JSON", json.dumps(json_data, ensure_ascii=False, indent=4), json_filename, "application/json")
 
-if __name__ == "__main__":
-    main()
+# Streamlit UI
+st.title("Criador de Cartas de Cibersegurança")
+
+st.session_state["deck"] = st.text_input("Deck", value=st.session_state["deck"])
+st.session_state["title"] = st.text_input("Título")
+st.session_state["card_type"] = st.selectbox("Tipo", ["Ataque", "Defesa"])
+st.session_state["description"] = st.text_area("Descrição")
+st.session_state["quote"] = st.text_area("Quote")
+st.session_state["image"] = st.file_uploader("Upload de Imagem", type=["png", "jpg", "jpeg"])
+
+if st.button("Adicionar Carta"):
+    add_card()
+
+st.subheader("Cartas de Ataque")
+st.write([card["title"] for card in st.session_state["cards_attack"]])
+
+st.subheader("Cartas de Defesa")
+st.write([card["title"] for card in st.session_state["cards_defense"]])
+
+if st.button("Gerar JSON"):
+    generate_json()
