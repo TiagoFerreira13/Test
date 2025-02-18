@@ -5,7 +5,7 @@ import textwrap
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 
 def main():
-    st.title("Criador de Cartas de Cibersegurança")
+    st.title("Criador de Cartas")
     
     # Session state to store cards
     if "cards_attack" not in st.session_state:
@@ -45,7 +45,7 @@ def main():
             
             # Reset input fields except deck
             st.session_state["deck"] = deck.strip()
-    
+            st.rerun()
     # Display cards
     st.subheader("Cartas de Ataque")
     for card in st.session_state["cards_attack"]:
