@@ -13,6 +13,7 @@ os.makedirs(TEMPLATE_FOLDER, exist_ok=True)
 TEMPLATE_URLS = {
     "attackcard.png": "https://github.com/TiagoFerreira13/Test/blob/main/Cartas/templates/attackcard.png",
     "defensecard.png": "https://github.com/TiagoFerreira13/Test/blob/main/Cartas/templates/defensecard.png",
+    font = "https://github.com/TiagoFerreira13/Test/blob/main/Cartas/Rajdhani/Rajdhani-Regular.ttf"
 }
 
 # Ensure templates exist
@@ -58,7 +59,7 @@ def draw_text(draw, text, font, box, align="left", fill=(255,255,255)):
         current_y += line_height
 
 def generate_cards(json_data):
-    font_path = "Rajdhani/Rajdhani-Regular.ttf"
+    font_path = font
     title_font = ImageFont.truetype(font_path, 48)
     category_font = ImageFont.truetype(font_path, 28)
     desc_font = ImageFont.truetype(font_path, 28)
