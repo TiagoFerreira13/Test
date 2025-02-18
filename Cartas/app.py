@@ -13,7 +13,7 @@ os.makedirs(TEMPLATE_FOLDER, exist_ok=True)
 TEMPLATE_URLS = {
     "attackcard.png": "https://github.com/TiagoFerreira13/Test/blob/main/Cartas/templates/attackcard.png",
     "defensecard.png": "https://github.com/TiagoFerreira13/Test/blob/main/Cartas/templates/defensecard.png",
-    font = "https://github.com/TiagoFerreira13/Test/blob/main/Cartas/Rajdhani/Rajdhani-Regular.ttf"
+    "Rajdhani-Regular.ttf": "https://github.com/TiagoFerreira13/Test/blob/main/Cartas/Rajdhani/Rajdhani-Regular.ttf"
 }
 
 # Ensure templates exist
