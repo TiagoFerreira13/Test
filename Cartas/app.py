@@ -59,7 +59,7 @@ def draw_text(draw, text, font, box, align="left", fill=(255,255,255)):
         current_y += line_height
 
 def generate_cards(json_data):
-    font_path = font
+    font_path = os.path.join(TEMPLATE_FOLDER, "Rajdhani-Regular.ttf")
     title_font = ImageFont.truetype(font_path, 48)
     category_font = ImageFont.truetype(font_path, 28)
     desc_font = ImageFont.truetype(font_path, 28)
@@ -132,6 +132,7 @@ def main():
             "flavors": {
                 "attack": {"base_image": os.path.join(TEMPLATE_FOLDER, "attackcard.png"), "cards": st.session_state["cards_attack"]},
                 "defense": {"base_image": os.path.join(TEMPLATE_FOLDER, "defensecard.png"), "cards": st.session_state["cards_defense"]}
+                "font": {"font": os.path.join(TEMPLATE_FOLDER, "Rajdhani-Regular.ttf"), "cards": st.session_state["font"]}
             }
         }
         json_filename = "cartas.json"
