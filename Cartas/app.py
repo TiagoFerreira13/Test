@@ -132,7 +132,6 @@ def main():
             "flavors": {
                 "attack": {"base_image": os.path.join(TEMPLATE_FOLDER, "attackcard.png"), "cards": st.session_state["cards_attack"]},
                 "defense": {"base_image": os.path.join(TEMPLATE_FOLDER, "defensecard.png"), "cards": st.session_state["cards_defense"]}
-                "font": {"font": os.path.join(TEMPLATE_FOLDER, "Rajdhani-Regular.ttf"), "cards": st.session_state["font"]}
             }
         }
         json_filename = "cartas.json"
