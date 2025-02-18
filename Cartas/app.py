@@ -68,7 +68,6 @@ def main():
                 st.session_state["cards_defense"].append(card)
             st.success(f"Carta '{title}' adicionada com sucesso!")
             st.session_state["deck"] = deck.strip()
-            st.experimental_rerun()
     
     st.subheader("Cartas de Ataque")
     for card in st.session_state["cards_attack"]:
