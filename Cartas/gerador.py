@@ -133,26 +133,26 @@ def main():
         if not os.path.exists(OUTPUT_DIR):
             os.makedirs(OUTPUT_DIR)
 
-        # Function to draw text
-        def draw_text(draw, text, font, box, align="left", fill=(255, 255, 255)):
-    x, y, w, h = box
-    lines = textwrap.wrap(text, width=30 if align == "center" else 40)
+    # Function to draw text
+    def draw_text(draw, text, font, box, align="left", fill=(255, 255, 255)):
+        x, y, w, h = box
+        lines = textwrap.wrap(text, width=30 if align == "center" else 40)
 
-    bbox = draw.textbbox((0, 0), "A", font=font)  # Measure text height correctly
-    line_height = (bbox[3] - bbox[1]) + 6
-    current_y = y
-
-    for line in lines:
-        line_bbox = draw.textbbox((0, 0), line, font=font)
-        line_width = line_bbox[2] - line_bbox[0]
-
-        if align == "center":
-            line_x = x + (w - line_width) // 2
-        else:
-            line_x = x
-
-        draw.text((line_x, current_y), line, font=font, fill=fill)
-        current_y += line_height
+        bbox = draw.textbbox((0, 0), "A", font=font)  # Measure text height correctly
+        line_height = (bbox[3] - bbox[1]) + 6
+        current_y = y
+    
+        for line in lines:
+            line_bbox = draw.textbbox((0, 0), line, font=font)
+            line_width = line_bbox[2] - line_bbox[0]
+    
+            if align == "center":
+                line_x = x + (w - line_width) // 2
+            else:
+                line_x = x
+    
+            draw.text((line_x, current_y), line, font=font, fill=fill)
+            current_y += line_height
 
         # Process each card
         for flavor in ["attack", "defense"]:
