@@ -2,55 +2,52 @@ import json
 import os
 import shutil
 import textwrap
+from io import BytesIO
 
 import requests
 import streamlit as st
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 
-# Constants for file paths
+# Constants
 FONT_URL = "https://github.com/TiagoFerreira13/Test/raw/refs/heads/main/Cartas/Rajdhani/Rajdhani-Regular.ttf"
 FONT_PATH = "Rajdhani-Regular.ttf"
 ATTACK_TEMPLATE_URL = "https://github.com/TiagoFerreira13/Test/raw/main/Cartas/templates/attackcard.png"
 DEFENSE_TEMPLATE_URL = "https://github.com/TiagoFerreira13/Test/raw/main/Cartas/templates/defensecard.png"
-ATTACK_TEMPLATE_PATH = "attackcard.png"
-DEFENSE_TEMPLATE_PATH = "defensecard.png"
 OUTPUT_DIR = "output"
 
-# Ensure the font and templates are downloaded
-def ensure_directory_exists(directory):
-    os.makedirs(directory, exist_ok=True)
+# Ensure the output directory exists
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+# Download assets if missing
 def download_file(url, filename):
     if not os.path.exists(filename):
-        with requests.get(url, stream=True) as response:
-            if response.status_code == 200:
-                with open(filename, "wb") as f:
-                    for chunk in response.iter_content(chunk_size=8192):
-                        f.write(chunk)
-            else:
-                st.error(f"Failed to download {filename} from {url}")
+        try:
+            response = requests.get(url, stream=True, timeout=10)
+            response.raise_for_status()
+            with open(filename, "wb") as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    f.write(chunk)
+        except requests.RequestException as e:
+            st.error(f"Error downloading {filename}: {e}")
 
-# Download required assets
 download_file(FONT_URL, FONT_PATH)
-download_file(ATTACK_TEMPLATE_URL, ATTACK_TEMPLATE_PATH)
-download_file(DEFENSE_TEMPLATE_URL, DEFENSE_TEMPLATE_PATH)
+download_file(ATTACK_TEMPLATE_URL, "attackcard.png")
+download_file(DEFENSE_TEMPLATE_URL, "defensecard.png")
 
 # Load font safely
-try:
-    title_font = ImageFont.truetype(FONT_PATH, 48)
-    category_font = ImageFont.truetype(FONT_PATH, 28)
-    desc_font = ImageFont.truetype(FONT_PATH, 28)
-except (IOError, OSError):
-    st.error("Font failed to load. Using default font.")
-    title_font = ImageFont.load_default()
-    category_font = ImageFont.load_default()
-    desc_font = ImageFont.load_default()
+def load_font(path, size):
+    try:
+        return ImageFont.truetype(path, size)
+    except IOError:
+        st.error(f"Failed to load font: {path}")
+        return ImageFont.load_default()
+
+title_font = load_font(FONT_PATH, 48)
+category_font = load_font(FONT_PATH, 28)
+desc_font = load_font(FONT_PATH, 28)
 
 def main():
     st.title("Criador de Cartas de Cibersegurança")
-    
-    # Ensure 'uploads' directory exists before saving the image
-    upload_dir = "uploads"
-    ensure_directory_exists(upload_dir)
 
     # Session state for storing cards
     if "cards_attack" not in st.session_state:
@@ -58,7 +55,7 @@ def main():
     if "cards_defense" not in st.session_state:
         st.session_state["cards_defense"] = []
 
-    # Card Input Fields
+    # Input fields
     deck = st.text_input("Deck")
     title = st.text_input("Título")
     card_type = st.selectbox("Tipo", ["Ataque", "Defesa"])
@@ -66,33 +63,22 @@ def main():
     quote = st.text_area("Quote")
     state = st.selectbox("Estado", ["draft", "ready"])
 
-    # Image Upload
-    image = st.file_uploader("Upload de Imagem", type=["png", "jpg", "jpeg"])
-
-    upload_dir = "uploads"
-
-    image_path = None  # Default to None if no image is uploaded
-    if image:
-        image_path = os.path.join(upload_dir, image.name)
-        with open(image_path, "wb") as f:
-            f.write(image.getbuffer())
+    # Image upload (keeps in memory instead of writing to disk)
+    uploaded_image = st.file_uploader("Upload de Imagem", type=["png", "jpg", "jpeg"])
+    image_bytes = None
+    if uploaded_image:
+        image_bytes = BytesIO(uploaded_image.getbuffer())
 
     # Add card
     if st.button("Adicionar Carta"):
-        missing_fields = []
-        if not title:
-            missing_fields.append("título")
-        if not description:
-            missing_fields.append("descrição")
-        
-        if missing_fields:
-            st.error(f"Os seguintes campos são obrigatórios: {', '.join(missing_fields)}")
+        if not title or not description:
+            st.error("Título e descrição são obrigatórios!")
         else:
             card = {
                 "deck": deck.strip(),
                 "title": title.strip(),
                 "state": state,
-                "image": image_path,
+                "image": image_bytes,
                 "description": description.strip(),
                 "quote": quote.strip()
             }
@@ -117,8 +103,8 @@ def main():
     if st.button("Gerar JSON"):
         json_data = {
             "flavors": {
-                "attack": {"base_image": ATTACK_TEMPLATE_PATH, "cards": st.session_state["cards_attack"]},
-                "defense": {"base_image": DEFENSE_TEMPLATE_PATH, "cards": st.session_state["cards_defense"]}
+                "attack": {"base_image": "attackcard.png", "cards": st.session_state["cards_attack"]},
+                "defense": {"base_image": "defensecard.png", "cards": st.session_state["cards_defense"]}
             },
             "font": {"path": FONT_PATH, "title_size": 48, "category_size": 28, "desc_size": 28},
             "layout": {
@@ -137,80 +123,54 @@ def main():
         
         st.success("JSON gerado com sucesso!")
         st.download_button("Baixar JSON", json.dumps(json_data, ensure_ascii=False, indent=4), json_filename, "application/json")
+
+    # Generate Cards
     if st.button("Gerar Cartas"):
         if not st.session_state["cards_attack"] and not st.session_state["cards_defense"]:
-            st.error("Erro: Nenhuma carta adicionada. Adicione cartas antes de gerar.")
-            st.stop()
-        
-        if not os.path.exists("cartas.json"):
-            st.error("Erro: Nenhum JSON encontrado. Gere o JSON primeiro.")
-            st.stop()
-    
+            st.error("Erro: Nenhuma carta adicionada.")
+            return
+
         with open("cartas.json", "r", encoding="utf-8") as f:
             base = json.load(f)
-            ensure_directory_exists(OUTPUT_DIR)
-    
-    
-        # Process each card
+
+        # Clear previous images
+        shutil.rmtree(OUTPUT_DIR)
+        os.makedirs(OUTPUT_DIR)
+
         for flavor in ["attack", "defense"]:
             template_path = base["flavors"][flavor]["base_image"]
             category_label = "Ataque" if flavor == "attack" else "Defesa"
-            cards = base["flavors"][flavor]["cards"]
 
-            for card in cards:
+            for card in base["flavors"][flavor]["cards"]:
                 template = Image.open(template_path).convert("RGBA")
                 draw = ImageDraw.Draw(template)
 
-                draw_text(draw, card["title"], title_font, base["layout"]["title_box"], align="center")
-                draw_text(draw, category_label, category_font, base["layout"]["category_box"], align="left")
-                draw_text(draw, card["description"], desc_font, base["layout"]["desc_box"], align="justified")
-                if card["quote"]:
-                    draw_text(draw, card["quote"], desc_font, base["layout"]["quote_box"], align="justified")
+                draw_text(draw, card["title"], title_font, base["layout"]["title_box"])
+                draw_text(draw, category_label, category_font, base["layout"]["category_box"])
+                draw_text(draw, card["description"], desc_font, base["layout"]["desc_box"])
+                draw_text(draw, card["quote"], desc_font, base["layout"]["quote_box"])
 
-                # Paste image if available
-                if card["image"] and os.path.exists(card["image"]):
+                if card["image"]:
                     x, y, w, h = base["layout"]["image_box"]
                     card_image = Image.open(card["image"]).convert("RGBA")
                     card_image = ImageOps.fit(card_image, (int(w), int(h)), Image.LANCZOS)
                     template.paste(card_image, (x, y), card_image)
-                card_output_filename = f"{card['deck'].replace(' ', '_')}_{card['title'].replace(' ', '_')}.png"
-                template.save(os.path.join(OUTPUT_DIR, card_output_filename))
+
                 output_filename = f"{card['deck'].replace(' ', '_')}_{card['title'].replace(' ', '_')}.png"
                 template.save(os.path.join(OUTPUT_DIR, output_filename))
                 st.success(f"Carta '{card['title']}' gerada!")
+
         zip_filename = shutil.make_archive("cartas", "zip", OUTPUT_DIR)
-        
-        # Provide a download button for the ZIP file
         with open(zip_filename, "rb") as zip_file:
-            st.download_button("Baixar Todas as Cartas", zip_file, file_name=zip_filename, mime="application/zip")
+            st.download_button("Baixar Todas as Cartas", zip_file, file_name="cartas.zip", mime="application/zip")
 
 # Function to draw text
-def draw_text(draw, text, font, box, align="left", fill=(255, 255, 255), width=40):
+def draw_text(draw, text, font, box, fill=(255, 255, 255), width=40):
     x, y, w, h = box
     lines = textwrap.wrap(text, width=width)
-
-    bbox = draw.textbbox((0, 0), "A", font=font)
-    line_height = (bbox[3] - bbox[1]) + 6
     current_y = y
-
     for line in lines:
-        line_bbox = draw.textbbox((0, 0), line, font=font)
-        line_width = line_bbox[2] - line_bbox[0]
+        draw.text((x, current_y), line, font=font, fill=fill)
+        current_y += font.size + 6  # Spacing between lines
 
-        if align == "center":
-            line_x = x + (w - line_width) // 2
-        elif align == "justified" and len(line) > 1:
-            words = line.split()
-            word_bboxes = [draw.textbbox((0, 0), word, font=font) for word in words]
-            word_widths = [bbox[2] - bbox[0] for bbox in word_bboxes]
-            space_width = (w - sum(word_widths)) / (len(words) - 1)
-            current_x = x
-            for word, word_bbox in zip(words, word_bboxes):
-                draw.text((current_x, current_y), word, font=font, fill=fill)
-                current_x += word_bbox[2] - word_bbox[0] + space_width
-            current_y += line_height
-            continue
-        else:
-            line_x = x
-
-        draw.text((line_x, current_y), line, font=font, fill=fill)
+main()
