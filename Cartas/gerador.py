@@ -14,14 +14,13 @@ ATTACK_TEMPLATE_PATH = "attackcard.png"
 DEFENSE_TEMPLATE_PATH = "defensecard.png"
 OUTPUT_DIR = "output"
 
-# Ensure the font is available
+# Ensure the font and templates are downloaded
 def download_file(url, filename):
     if not os.path.exists(filename):
         response = requests.get(url)
         if response.status_code == 200:
             with open(filename, "wb") as f:
                 f.write(response.content)
-            print(f"Downloaded {filename}")
         else:
             print(f"Failed to download {filename}")
 
@@ -57,28 +56,25 @@ def main():
     card_type = st.selectbox("Tipo", ["Ataque", "Defesa"])
     description = st.text_area("Descrição")
     quote = st.text_area("Quote")
-    
-# Ensure 'uploads' directory exists before saving the image
-upload_dir = "uploads"
-os.makedirs(upload_dir, exist_ok=True)  # Creates 'uploads' if it doesn't exist
 
-image_path = ""
-if image:
-    image_path = os.path.join(upload_dir, image.name)
-    with open(image_path, "wb") as f:
-        f.write(image.getbuffer())
+    # Image Upload
+    image = st.file_uploader("Upload de Imagem", type=["png", "jpg", "jpeg"])
+
+    # Ensure 'uploads' directory exists before saving the image
+    upload_dir = "uploads"
+    os.makedirs(upload_dir, exist_ok=True)  
+
+    image_path = None  # Default to None if no image is uploaded
+    if image:
+        image_path = os.path.join(upload_dir, image.name)
+        with open(image_path, "wb") as f:
+            f.write(image.getbuffer())
 
     # Add card
     if st.button("Adicionar Carta"):
         if not title or not description:
             st.error("O título e descrição são obrigatórios!")
         else:
-            image_path = ""
-            if image:
-                image_path = os.path.join("uploads", image.name)
-                with open(image_path, "wb") as f:
-                    f.write(image.getbuffer())
-
             card = {
                 "deck": deck.strip(),
                 "title": title.strip(),
