@@ -57,7 +57,16 @@ def main():
     card_type = st.selectbox("Tipo", ["Ataque", "Defesa"])
     description = st.text_area("Descrição")
     quote = st.text_area("Quote")
-    image = st.file_uploader("Upload de Imagem", type=["png", "jpg", "jpeg"])
+    
+# Ensure 'uploads' directory exists before saving the image
+upload_dir = "uploads"
+os.makedirs(upload_dir, exist_ok=True)  # Creates 'uploads' if it doesn't exist
+
+image_path = ""
+if image:
+    image_path = os.path.join(upload_dir, image.name)
+    with open(image_path, "wb") as f:
+        f.write(image.getbuffer())
 
     # Add card
     if st.button("Adicionar Carta"):
