@@ -37,6 +37,8 @@ download_file(DEFENSE_TEMPLATE_URL, DEFENSE_TEMPLATE_PATH)
 # Load font safely
 try:
     title_font = ImageFont.truetype(FONT_PATH, 48)
+    category_font = ImageFont.truetype(FONT_PATH, 28)
+    desc_font = ImageFont.truetype(FONT_PATH, 28)
 except (IOError, OSError):
     st.error("Font failed to load. Using default font.")
     title_font = ImageFont.load_default()
@@ -44,12 +46,11 @@ except (IOError, OSError):
     desc_font = ImageFont.load_default()
 
 def main():
-    """
-    Main function to run the Streamlit app for creating cybersecurity cards.
-    It handles user inputs, card creation, and JSON generation.
-    """
-def main():
     st.title("Criador de Cartas de Cibersegurança")
+    
+    # Ensure 'uploads' directory exists before saving the image
+    upload_dir = "uploads"
+    ensure_directory_exists(upload_dir)
 
     # Session state for storing cards
     if "cards_attack" not in st.session_state:
@@ -68,9 +69,7 @@ def main():
     # Image Upload
     image = st.file_uploader("Upload de Imagem", type=["png", "jpg", "jpeg"])
 
-    # Ensure 'uploads' directory exists before saving the image
     upload_dir = "uploads"
-    ensure_directory_exists(upload_dir)
 
     image_path = None  # Default to None if no image is uploaded
     if image:
@@ -151,8 +150,6 @@ def main():
             base = json.load(f)
             ensure_directory_exists(OUTPUT_DIR)
     
-        if not os.path.exists(OUTPUT_DIR):
-            os.makedirs(OUTPUT_DIR)
     
         # Process each card
         for flavor in ["attack", "defense"]:
@@ -178,12 +175,11 @@ def main():
                     template.paste(card_image, (x, y), card_image)
                 card_output_filename = f"{card['deck'].replace(' ', '_')}_{card['title'].replace(' ', '_')}.png"
                 template.save(os.path.join(OUTPUT_DIR, card_output_filename))
+                output_filename = f"{card['deck'].replace(' ', '_')}_{card['title'].replace(' ', '_')}.png"
+                template.save(os.path.join(OUTPUT_DIR, output_filename))
                 st.success(f"Carta '{card['title']}' gerada!")
-        # Create a ZIP file containing all generated cards
-        zip_filename = "cartas.zip"
-        shutil.make_archive("cartas", "zip", OUTPUT_DIR)
+        zip_filename = shutil.make_archive("cartas", "zip", OUTPUT_DIR)
         
-        # Provide a download button for the ZIP file
         # Provide a download button for the ZIP file
         with open(zip_filename, "rb") as zip_file:
             st.download_button("Baixar Todas as Cartas", zip_file, file_name=zip_filename, mime="application/zip")
@@ -218,4 +214,3 @@ def draw_text(draw, text, font, box, align="left", fill=(255, 255, 255), width=4
             line_x = x
 
         draw.text((line_x, current_y), line, font=font, fill=fill)
-    main()
