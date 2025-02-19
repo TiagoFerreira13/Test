@@ -145,20 +145,29 @@ def main():
         def draw_text(draw, text, font, box, align="left", fill=(255, 255, 255)):
             x, y, w, h = box
             lines = textwrap.wrap(text, width=30 if align == "center" else 40)
-    
+
             bbox = draw.textbbox((0, 0), "A", font=font)
             line_height = (bbox[3] - bbox[1]) + 6
             current_y = y
-    
+
             for line in lines:
                 line_bbox = draw.textbbox((0, 0), line, font=font)
                 line_width = line_bbox[2] - line_bbox[0]
-    
+
                 if align == "center":
                     line_x = x + (w - line_width) // 2
+                elif align == "justified" and len(line) > 1:
+                    words = line.split()
+                    space_width = (w - sum(draw.textbbox((0, 0), word, font=font)[2] for word in words)) / (len(words) - 1)
+                    current_x = x
+                    for word in words:
+                        draw.text((current_x, current_y), word, font=font, fill=fill)
+                        current_x += draw.textbbox((0, 0), word, font=font)[2] + space_width
+                    current_y += line_height
+                    continue
                 else:
                     line_x = x
-    
+
                 draw.text((line_x, current_y), line, font=font, fill=fill)
                 current_y += line_height
     
