@@ -3,6 +3,7 @@ import json
 import os
 import textwrap
 import requests
+import shutil
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 
 # Constants for file paths
@@ -129,57 +130,65 @@ def main():
     if st.button("Gerar Cartas"):
         with open("cartas.json", "r", encoding="utf-8") as f:
             base = json.load(f)
-
+    
         if not os.path.exists(OUTPUT_DIR):
             os.makedirs(OUTPUT_DIR)
-
-    # Function to draw text
-    def draw_text(draw, text, font, box, align="left", fill=(255, 255, 255)):
-        x, y, w, h = box
-        lines = textwrap.wrap(text, width=30 if align == "center" else 40)
-
-        bbox = draw.textbbox((0, 0), "A", font=font)  # Measure text height correctly
-        line_height = (bbox[3] - bbox[1]) + 6
-        current_y = y
     
-        for line in lines:
-            line_bbox = draw.textbbox((0, 0), line, font=font)
-            line_width = line_bbox[2] - line_bbox[0]
+        # Function to draw text
+        def draw_text(draw, text, font, box, align="left", fill=(255, 255, 255)):
+            x, y, w, h = box
+            lines = textwrap.wrap(text, width=30 if align == "center" else 40)
     
-            if align == "center":
-                line_x = x + (w - line_width) // 2
-            else:
-                line_x = x
+            bbox = draw.textbbox((0, 0), "A", font=font)  # Measure text height correctly
+            line_height = (bbox[3] - bbox[1]) + 6
+            current_y = y
     
-            draw.text((line_x, current_y), line, font=font, fill=fill)
-            current_y += line_height
-
+            for line in lines:
+                line_bbox = draw.textbbox((0, 0), line, font=font)
+                line_width = line_bbox[2] - line_bbox[0]
+    
+                if align == "center":
+                    line_x = x + (w - line_width) // 2
+                else:
+                    line_x = x
+    
+                draw.text((line_x, current_y), line, font=font, fill=fill)
+                current_y += line_height
+    
         # Process each card
         for flavor in ["attack", "defense"]:
             template_path = base["flavors"][flavor]["base_image"]
             category_label = "Ataque" if flavor == "attack" else "Defesa"
             cards = base["flavors"][flavor]["cards"]
-
+    
             for card in cards:
                 template = Image.open(template_path).convert("RGBA")
                 draw = ImageDraw.Draw(template)
-
+    
                 draw_text(draw, card["title"], title_font, base["layout"]["title_box"], align="center")
                 draw_text(draw, category_label, category_font, base["layout"]["category_box"], align="left")
                 draw_text(draw, card["description"], desc_font, base["layout"]["desc_box"], align="justified")
                 if card["quote"]:
                     draw_text(draw, card["quote"], desc_font, base["layout"]["quote_box"], align="justified")
-
+    
                 # Paste image if available
                 if card["image"] and os.path.exists(card["image"]):
                     x, y, w, h = base["layout"]["image_box"]
                     card_image = Image.open(card["image"]).convert("RGBA")
                     card_image = ImageOps.fit(card_image, (int(w), int(h)), Image.Resampling.LANCZOS)
                     template.paste(card_image, (x, y), card_image)
-
+    
                 filename = f"{card['deck'].replace(' ', '_')}_{card['title'].replace(' ', '_')}.png"
                 template.save(os.path.join(OUTPUT_DIR, filename))
                 st.success(f"Carta '{card['title']}' gerada!")
+    
+        # Create a ZIP file containing all generated cards
+        zip_filename = "cartas.zip"
+        shutil.make_archive("cartas", "zip", OUTPUT_DIR)
+    
+        # Provide a download button for the ZIP file
+        with open(zip_filename, "rb") as zip_file:
+            st.download_button("Baixar Todas as Cartas", zip_file, file_name=zip_filename, mime="application/zip")
 
 if __name__ == "__main__":
     main()
