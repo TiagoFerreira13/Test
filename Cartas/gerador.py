@@ -14,9 +14,11 @@ FONT_PATH = "Rajdhani-Regular.ttf"
 ATTACK_TEMPLATE_URL = "https://github.com/TiagoFerreira13/Test/raw/main/Cartas/templates/attackcard.png"
 DEFENSE_TEMPLATE_URL = "https://github.com/TiagoFerreira13/Test/raw/main/Cartas/templates/defensecard.png"
 OUTPUT_DIR = "output"
+UPLOAD_DIR = "uploads"
 
-# Ensure the output directory exists
+# Ensure required directories exist
 os.makedirs(OUTPUT_DIR, exist_ok=True)
+os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 # Download assets if missing
 def download_file(url, filename):
@@ -63,11 +65,14 @@ def main():
     quote = st.text_area("Quote")
     state = st.selectbox("Estado", ["draft", "ready"])
 
-    # Image upload (keeps in memory instead of writing to disk)
+    # Image upload (save to disk instead of keeping in memory)
     uploaded_image = st.file_uploader("Upload de Imagem", type=["png", "jpg", "jpeg"])
-    image_bytes = None
+    image_path = None
+
     if uploaded_image:
-        image_bytes = BytesIO(uploaded_image.getbuffer())
+        image_path = os.path.join(UPLOAD_DIR, uploaded_image.name)
+        with open(image_path, "wb") as f:
+            f.write(uploaded_image.getbuffer())  # Save image to disk
 
     # Add card
     if st.button("Adicionar Carta"):
@@ -78,7 +83,7 @@ def main():
                 "deck": deck.strip(),
                 "title": title.strip(),
                 "state": state,
-                "image": image_bytes,
+                "image": image_path,  # Now a valid file path instead of BytesIO
                 "description": description.strip(),
                 "quote": quote.strip()
             }
@@ -134,7 +139,8 @@ def main():
             base = json.load(f)
 
         # Clear previous images
-        shutil.rmtree(OUTPUT_DIR)
+        if os.path.exists(OUTPUT_DIR):
+            shutil.rmtree(OUTPUT_DIR)
         os.makedirs(OUTPUT_DIR)
 
         for flavor in ["attack", "defense"]:
@@ -150,7 +156,8 @@ def main():
                 draw_text(draw, card["description"], desc_font, base["layout"]["desc_box"])
                 draw_text(draw, card["quote"], desc_font, base["layout"]["quote_box"])
 
-                if card["image"]:
+                # Use saved image path instead of BytesIO
+                if card["image"] and os.path.exists(card["image"]):
                     x, y, w, h = base["layout"]["image_box"]
                     card_image = Image.open(card["image"]).convert("RGBA")
                     card_image = ImageOps.fit(card_image, (int(w), int(h)), Image.LANCZOS)
